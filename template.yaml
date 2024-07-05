@@ -45,7 +45,7 @@ Resources:
           Type: Api
           Properties:
             Path: /getCryptoPrice
-            Method: POST
+            Method: GET
             RestApiId: !Ref CryptoServiceGateway
 
   getSearchHistoryFunction:

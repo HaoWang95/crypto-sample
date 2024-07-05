@@ -89,7 +89,7 @@ export const getCryptoPrice = async (event, context) => {
         statusCode: 200,
         body: JSON.stringify({
           body: {
-            message: "In case of email issues, result is returned",
+            message: "In case of email issues, crypto result is returned",
             dynamoDbResult: putResult,
             emailResult: emailResponse,
             data: resp.data,

@@ -2,9 +2,9 @@ import { SESClient, SendEmailCommand } from "@aws-sdk/client-ses";
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import { PutCommand, DynamoDBDocumentClient } from "@aws-sdk/lib-dynamodb";
 import axios from "axios";
+import validator from "validator";
 
 const writeToTable = process.env.WRITE_TO_TABLE;
-const cryptoKey = process.env.CRYPTO_KEY;
 
 // export ses instance from a separate file
 const emailCharSet = "utf-8";
@@ -51,11 +51,10 @@ export const getCryptoPrice = async (event, context) => {
   const crypto = event?.queryStringParameters?.crypto;
   const email = event?.queryStringParameters?.email;
 
-  console.info(`cryptoKey: ${cryptoKey}`);
   console.info(`request crypto query: ${crypto}`);
   console.info(`request email query: ${email}`);
 
-  if (crypto && email) {
+  if (crypto && email && validator.isEmail(email)) {
     try {
       let resp = await axios.get(
         `https://api.coingecko.com/api/v3/simple/price?ids=${crypto}&vs_currencies=aud`,
@@ -112,7 +111,7 @@ export const getCryptoPrice = async (event, context) => {
     statusCode: 400,
     body: JSON.stringify({
       message:
-        "get crypto price endpoint, cryptocurrency & email is required, one of them is missing",
+        "This is a generic message indicating that either query string crypto or email is missing or is of invalid type in request",
     }),
   };
 };

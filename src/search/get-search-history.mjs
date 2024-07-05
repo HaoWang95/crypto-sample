@@ -1,15 +1,15 @@
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import { QueryCommand, DynamoDBDocumentClient } from "@aws-sdk/lib-dynamodb";
+import validator from  "validator";
 
 const readFromTable = process.env.READ_FROM_TABLE;
-
 
 const dynamoDbReadClient = new DynamoDBClient({});
 const dbQueryClient = DynamoDBDocumentClient.from(dynamoDbReadClient);
 
 export const getSearchHistory = async (event, context) => {
   const userEmail = event?.queryStringParameters?.email;
-  if (userEmail) {
+  if (userEmail && validator.isEmail(userEmail)) {
     // log out for cloudwatch
     console.info(`get-search-history: req user email is ${userEmail}`);
     const current = Date.now().toString();
@@ -49,7 +49,8 @@ export const getSearchHistory = async (event, context) => {
   return {
     statusCode: 400,
     body: JSON.stringify({
-      message: "Please use GET request with email query string to search operation history endpoint",
+      message:
+        "Please use GET request with email query string to search operation history endpoint",
     }),
   };
 };

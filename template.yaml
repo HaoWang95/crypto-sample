@@ -1,0 +1,129 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: >-
+  coins-sample
+Transform:
+  - AWS::Serverless-2016-10-31
+
+# Resources declares the AWS resources that you want to include in the stack
+# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/resources-section-structure.html
+Resources:
+  CryptoServiceGateway:
+    Type: AWS::Serverless::Api
+    Properties:
+      Name: CryptoServiceGateway
+      StageName: dev
+
+  getCryptoPriceFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/email/get-crypto-price.getCryptoPrice
+      Runtime: nodejs18.x
+      Architectures:
+        - x86_64
+      MemorySize: 128
+      Timeout: 300
+      Description: Serverless endpoint to query/email crypto price to user
+      Policies:
+        - Version: "2012-10-17"
+          Statement:
+            - Effect: Allow
+              # Enable put item only
+              Action:
+                - dynamodb:PutItem
+              Resource: !GetAtt SearchHistoryTable.Arn
+            - Effect: Allow
+              Action:
+                - ses:SendEmail
+                - ses:SendRawEmail
+              Resource: "*"
+        # create policies to write into dynamodb
+      Environment:
+        Variables:
+          WRITE_TO_TABLE: !Ref SearchHistoryTable
+      Events:
+        CryptoServiceGateway:
+          Type: Api
+          Properties:
+            Path: /getCryptoPrice
+            Method: POST
+            RestApiId: !Ref CryptoServiceGateway
+
+  getSearchHistoryFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/search/get-search-history.getSearchHistory
+      Runtime: nodejs18.x
+      Architectures:
+        - x86_64
+      MemorySize: 128
+      Timeout: 300
+      Description: Serverless endpoint to query/email crypto price to user
+      Policies:
+        - Version: "2012-10-17"
+          Statement:
+            - Effect: Allow
+              # Enable get item only
+              Action:
+                - dynamodb:GetItem
+                - dynamodb:Query
+              Resource: !GetAtt SearchHistoryTable.Arn
+        # create policies to write into dynamodb
+      Environment:
+        Variables:
+          READ_FROM_TABLE: !Ref SearchHistoryTable
+      Events:
+        CryptoServiceGateway:
+          Type: Api
+          Properties:
+            Path: /getSearchHistory
+            Method: GET
+            RestApiId: !Ref CryptoServiceGateway
+
+  SearchHistoryTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: SearchHistory
+      AttributeDefinitions:
+        - AttributeName: user
+          AttributeType: S
+        - AttributeName: timestamp
+          AttributeType: S
+      KeySchema:
+        - AttributeName: "user"
+          KeyType: "HASH" # Partition key
+        - AttributeName: "timestamp"
+          KeyType: "RANGE" # Sort key
+      BillingMode: PAY_PER_REQUEST
+
+  ApplicationResourceGroup:
+    Type: AWS::ResourceGroups::Group
+    Properties:
+      Name:
+        Fn::Sub: ApplicationInsights-SAM-${AWS::StackName}
+      ResourceQuery:
+        Type: CLOUDFORMATION_STACK_1_0
+  ApplicationInsightsMonitoring:
+    Type: AWS::ApplicationInsights::Application
+    Properties:
+      ResourceGroupName:
+        Ref: ApplicationResourceGroup
+      AutoConfigurationEnabled: "true"
+Outputs:
+  WebEndpoint:
+    Description: API Gateway endpoint URL for dev stage
+    Value: !Sub "https://${CryptoServiceGateway}.execute-api.${AWS::Region}.amazonaws.com/dev/"
+  GetCryptoPriceEndpoint:
+    Description: Serverless endpoint managed by the gateway
+    Value: !Sub "https://${CryptoServiceGateway}.execute-api.${AWS::Region}.amazonaws.com/dev/getCryptoPrice"
+  GetSearchHistoryEndpoint:
+    Description: Serverless endpoint managed by the gateway
+    Value: !Sub "https://${CryptoServiceGateway}.execute-api.${AWS::Region}.amazonaws.com/dev/getSearchHistory"
+# # More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
+Globals:
+  Function:
+    Tracing: Active
+    # You can add LoggingConfig parameters such as the Logformat, Log Group, and SystemLogLevel or ApplicationLogLevel. Learn more here https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-resource-function.html#sam-function-loggingconfig.
+    LoggingConfig:
+      LogFormat: JSON
+  Api:
+    TracingEnabled: true

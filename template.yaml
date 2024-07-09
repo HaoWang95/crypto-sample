@@ -67,7 +67,6 @@ Resources:
                 - dynamodb:GetItem
                 - dynamodb:Query
               Resource: !GetAtt SearchHistoryTable.Arn
-        # create policies to write into dynamodb
       Environment:
         Variables:
           READ_FROM_TABLE: !Ref SearchHistoryTable

@@ -67,7 +67,8 @@ export const getCryptoPrice = async (event, context) => {
         }
       );
 
-      const coinPriceAud = resp?.data?.[crypto]?.["aud"] ?? "unreturned";
+      const coinPriceAud =
+        resp?.data?.[crypto]?.["aud"] ?? "not returned from coingecko";
       const emailResponse = await sendCryptoEmail(email, crypto, coinPriceAud);
       console.info(`Sent ${emailResponse.MessageId}`);
 
@@ -87,12 +88,10 @@ export const getCryptoPrice = async (event, context) => {
       return {
         statusCode: 200,
         body: JSON.stringify({
-          body: {
-            message: "In case of email issues, crypto result is returned",
-            dynamoDbResult: putResult,
-            emailResult: emailResponse,
-            data: resp.data,
-          },
+          message: "In case of email issues, crypto result is returned",
+          dynamoDbResult: putResult,
+          emailResult: emailResponse,
+          data: resp.data,
         }),
         // body: JSON.stringify(resp.data),
       };
@@ -111,7 +110,7 @@ export const getCryptoPrice = async (event, context) => {
     statusCode: 400,
     body: JSON.stringify({
       message:
-        "This is a generic message indicating that either query string crypto or email is missing or is of invalid type in request",
+        "This is a generic message indicating that either query string crypto or email is missing or is invalid.",
     }),
   };
 };
